@@ -14,6 +14,8 @@ public class JApp {
 	private MongoClient client;
 	private DB db;
 	private List<Sensor> sensores = new ArrayList<Sensor>();
+	private List<String[]> mongo_list = new ArrayList<String[]>();
+	protected long java_mongo_sleep = 15 * 1000;
 
 	protected JApp() {
 	}
@@ -25,15 +27,16 @@ public class JApp {
 	}
 
 	void run() {
-		connectMongo();
 		startPahoLink();
+		startMongoLink();
 		startSybaseLink();
 	}
 
 	@SuppressWarnings({ "deprecation" })
-	private void connectMongo() {
-		// master thread que garante que a slave thread está viva, senão tentar de N em N segundos/minutos
-		
+	private void startMongoLink() {
+		// master thread que garante que a slave thread está viva, senão tentar de N em
+		// N segundos/minutos
+
 		// tarefas da slave thread
 		{
 			// connect to Mongo
@@ -44,6 +47,37 @@ public class JApp {
 			db = client.getDB("sid");
 			// get collection
 			DBCollection collection = db.getCollection("humidtemp_aux");
+
+			/*
+			 * Thread responsavel por transferir todos os dados que estejam em espera na lista do java para o mongo=>Collection=>humidtemp_aux
+			 */
+			new Thread(new Runnable() {
+				@Override
+				public void run() {
+					while (true) {
+						
+						for (String[] vector_info : mongo_list) {
+							String temperature = vector_info[0];
+							String humidity = vector_info[1];
+							String date = vector_info[2];
+							String time = vector_info[3];
+							
+							DBObject sensor_data = new BasicDBObject("temperature", temperature).append("humidity", humidity)
+									.append("date", date).append("time", time);
+							DBCollection collection = db.getCollection("humidtemp_aux");
+							collection.insert(sensor_data);
+						}
+						
+						System.out.println("INSERI "+mongo_list.size()+" entradas no MONGO \n\n");
+						// esperar por mais dados
+						try {
+							Thread.currentThread().sleep(java_mongo_sleep);
+						} catch (InterruptedException e) {
+							e.printStackTrace();
+						}
+					}
+				}
+			}).start();
 		}
 	}
 
@@ -55,7 +89,7 @@ public class JApp {
 	}
 
 	private void startSybaseLink() {
-		
+
 	}
 
 	// https://eclipse.org/paho/clients/js/utility/
@@ -73,13 +107,16 @@ public class JApp {
 				String date = array[11];
 				String time = array[15];
 
-				DBObject person = new BasicDBObject("temperature", temperature).append("humidity", humidity)
-						.append("date", date).append("time", time);
-				DBCollection collection = db.getCollection("humidtemp_aux");
-				collection.insert(person);
+				String[] vector_info = new String[4];
 
-				System.out.println("Tratamos do " + "\n temperature " + temperature + "\n humidity " + humidity
-						+ "\n date " + date + "\n time " + time);
+				vector_info[0] = temperature;
+				vector_info[1] = humidity;
+				vector_info[2] = date;
+				vector_info[3] = time;
+
+				mongo_list.add(vector_info);
+				
+				System.out.println("COLOQUEI DADOS NA LISTA DO JAVA em espera para o MONGO \n\n");
 			}
 		}).start();
 	}

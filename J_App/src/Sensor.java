@@ -29,8 +29,8 @@ public class Sensor implements MqttCallback {
 
 	@Override
 	public void messageArrived(String topico, MqttMessage value) throws Exception {
-		// TODO Auto-generated method stub
 		String valueString = value.toString();
+		System.out.println("RECEBI DADOS DO PAHO "+valueString+"\n\n");
 		JApp.getInstance().receiveSensorData(valueString);
 	}
 	
