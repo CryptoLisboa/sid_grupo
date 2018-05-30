@@ -16,7 +16,7 @@ public class JApp {
 	private DB db;
 	private List<Sensor> sensores = new ArrayList<Sensor>();
 	private List<String[]> mongo_list = new ArrayList<String[]>(), migration_list;
-	protected long java_mongo_sleep = 15 * 1000;
+	protected long java_mongo_sleep = 15 * 1000, mongo_sybase_sleep = 30 * 1000;
 
 	protected JApp() {
 	}
@@ -35,7 +35,7 @@ public class JApp {
 
 	@SuppressWarnings({ "deprecation" })
 	private void startMongoLink() {
-		// master thread que garante que a slave thread está viva, senão tentar de N em
+		// master thread que garante que a slave thread estÃ¡ viva, senÃ£o tentar de N em
 		// N segundos/minutos
 
 		// tarefas da slave thread
@@ -47,7 +47,7 @@ public class JApp {
 			// connect to database
 			db = client.getDB("sid");
 			// get collection
-			DBCollection collection = db.getCollection("humidtemp_aux");
+			//DBCollection collection = db.getCollection("humidtemp_aux");
 
 			/*
 			 * Thread responsavel por transferir todos os dados que estejam em espera na
@@ -57,6 +57,7 @@ public class JApp {
 				@Override
 				public void run() {
 					while (true) {
+						DBCollection collection = db.getCollection("humidtemp_aux");
 
 						for (String[] vector_info : mongo_list) {
 							String temperature = vector_info[0];
@@ -66,7 +67,6 @@ public class JApp {
 
 							DBObject sensor_data = new BasicDBObject("temperature", temperature)
 									.append("humidity", humidity).append("date", date).append("time", time);
-							DBCollection collection = db.getCollection("humidtemp_aux");
 							collection.insert(sensor_data);
 						}
 
@@ -93,13 +93,26 @@ public class JApp {
 	}
 
 	private void startSybaseLink() {
+		// fazer thread
 		Sybase_connection sybase_connection = new Sybase_connection();
-		sybase_connection.start();
+		new Thread(new Runnable() {
+			@Override
+			public void run() {
+				while(true) {
+					sybase_connection.start();
+					try {
+						Thread.currentThread().sleep(mongo_sybase_sleep);
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+				}				
+			}
+		}).start();
 	}
 
 	// https://eclipse.org/paho/clients/js/utility/
-	// {“_id”:”36”, “temperature”:”36.0”, “humidity”: “72.3”, “date”: “02/03/2018”,
-	// “time”: “01:00:00”}
+	// {â€œ_idâ€�:â€�36â€�, â€œtemperatureâ€�:â€�36.0â€�, â€œhumidityâ€�: â€œ72.3â€�, â€œdateâ€�: â€œ02/03/2018â€�,
+	// â€œtimeâ€�: â€œ01:00:00â€�}
 	public void receiveSensorData(String value) {
 		// iniciar thread que introduz dados no mongo
 		new Thread(new Runnable() {
@@ -121,7 +134,7 @@ public class JApp {
 
 				mongo_list.add(vector_info);
 
-				System.out.println("COLOQUEI DADOS NA LISTA DO JAVA em espera para o MONGO \n\n");
+				//System.out.println("COLOQUEI DADOS NA LISTA DO JAVA em espera para o MONGO \n\n");
 			}
 		}).start();
 	}

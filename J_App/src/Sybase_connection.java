@@ -22,8 +22,8 @@ public class Sybase_connection {
 			System.out.println("j· liguei");
 			stmn = connect.createStatement();
 			// obter id da proxima alinea para insercao
-			ResultSet rs=stmn.executeQuery("select count(IDmedicao)+1 from HumidadeTemperatura");
-			int queryIt =  ((Number) rs.getObject(1)).intValue();
+			ResultSet rs = stmn.executeQuery("select count(IDmedicao)+1 from HumidadeTemperatura");
+			int queryIt = ((Number) rs.getObject(1)).intValue();
 			// preparar o query da migracao de dados do mongodb para o sybase
 			String queryMigration = createQuery(queryIt);
 			rs = stmn.executeQuery(queryMigration);
@@ -51,22 +51,25 @@ public class Sybase_connection {
 		int list_size = migrationData.size();
 		// percorrer a lista de dados afim de elaborar as variaveis com os dados das
 		for (String[] data : migrationData) {
-			
-			String content = "("+ data[0] +", "+ data[1] +", "+ data[2] +", "+ data[3] +", "+idLocal+")";
+
+			String content = "(" + data[0] + ", " + data[1] + ", " + data[2] + ", " + data[3] + ", " + idLocal + ")";
 			idLocal++;
-			
+
 			localQuery += content;
 			// preparar para proxima entrada caso nao seja o ultimo
-			if(counter < list_size) {
+			if (counter < list_size) {
 				localQuery += ", ";
 			}
 			counter++;
-		}				
+		}
 		return localQuery;
 	}
 
 	public static void main(String[] args) {
-		Sybase_connection db = new Sybase_connection();
-		db.start();
+		/*
+		 * O elmo sugeriu mandar po caralho mais velho 
+		 * Sybase_connection db = new
+		 * Sybase_connection(); db.start();
+		 */
 	}
 }

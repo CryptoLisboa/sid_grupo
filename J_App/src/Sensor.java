@@ -30,7 +30,7 @@ public class Sensor implements MqttCallback {
 	@Override
 	public void messageArrived(String topico, MqttMessage value) throws Exception {
 		String valueString = value.toString();
-		System.out.println("RECEBI DADOS DO PAHO "+valueString+"\n\n");
+		//System.out.println("RECEBI DADOS DO PAHO "+valueString+"\n\n");
 		JApp.getInstance().receiveSensorData(valueString);
 	}
 	
