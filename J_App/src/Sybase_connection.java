@@ -7,7 +7,7 @@ import java.util.List;
 import sybase.jdbc4.sqlanywhere.*;
 
 public class Sybase_connection {
-	// private Sensor s;
+	// private Sensor s;d
 	private String time;
 	private Connection connect;
 	private Statement stmn;
