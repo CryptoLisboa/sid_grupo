@@ -163,6 +163,7 @@ public class JApp {
 		return migration_list;
 	}
 //
+	//
 	public void mongodbCollectionDataTransfer() {
 		// obter dados a tranferir
 		DBCollection auxColl = db.getCollection("humidtemp_aux");

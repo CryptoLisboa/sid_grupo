@@ -65,6 +65,7 @@ public class Sybase_connection {
 		return localQuery;
 	}
 //
+	//
 	public static void main(String[] args) {
 		/*
 		 * O elmo sugeriu mandar po caralho mais velho 
