@@ -55,5 +55,5 @@ public class Sensor implements MqttCallback {
 			me.printStackTrace();
 		}
 	}
-
+//
 }
