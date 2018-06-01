@@ -14,11 +14,9 @@ public class Sybase_connection {
 	private ResultSet rs;
 
 	public void start() {
-		int temp = 5;
-		int hum = 4;
 		try {
 			System.out.println("vou ligar");
-			connect = DriverManager.getConnection("jdbc:sqlanywhere:uid=DBA;pwd=sql;eng=SID_DB2-1;database=SID_DB2-1");
+			connect = DriverManager.getConnection("jdbc:sqlanywhere:uid=dba;pwd=sql;eng=SID_DB2-1;database=SID_DB2-1");
 			System.out.println("j· liguei");
 			stmn = connect.createStatement();
 			// obter id da proxima alinea para insercao
@@ -66,11 +64,5 @@ public class Sybase_connection {
 	}
 //
 	//
-	public static void main(String[] args) {
-		/*
-		 * O elmo sugeriu mandar po caralho mais velho 
-		 * Sybase_connection db = new
-		 * Sybase_connection(); db.start();
-		 */
-	}
+
 }

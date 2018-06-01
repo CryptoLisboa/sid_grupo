@@ -27,6 +27,68 @@ public class JApp {
 		return instance;
 	}
 
+	/*
+	 * exemplo de uso Array:double[], key:String
+	 * 
+	 * double media = calculateSD(array, "mean");
+	 * 
+	 * double desvioPadrao = calculateSD(array, "standardDeviation");
+	 * 
+	 */
+	public static double calculateSD(double numArray[], String key) {
+
+		double sum = 0.0;
+		double variancia = 0.0;
+
+		for (double num : numArray) {
+			sum += num;
+		}
+
+		double mean = sum / numArray.length;
+
+		for (double num : numArray) {
+			variancia += Math.pow(num - mean, 2);
+		}
+
+		double standardDeviation = Math.sqrt(variancia / numArray.length);
+
+		switch (key) {
+		case "mean":
+			return mean;
+		default:
+			return standardDeviation;
+		}
+	}
+	
+	public void filtro(double numArray[]) {
+		ArrayList<Double> lst = new ArrayList<Double>();
+		double r=0;
+		for(int i=0; i<numArray.length;i++) {
+			
+			
+		}
+	}
+
+	private double[] converter(String key) {
+		double[] array = new double[mongo_list.size()];
+		for (int i = 0; i < mongo_list.size(); i++) {
+			String[] array_sting = mongo_list.get(i);
+			String val = null;
+			switch (key) {
+			case "temperature":
+				val = array_sting[0];
+				break;
+			case "humidity":
+				val = array_sting[1];
+				break;
+			default:
+				break;
+			}
+			array[i] = Double.parseDouble(val);
+		}
+		return array;
+	}
+	
 	void run() {
 		startPahoLink();
 		startMongoLink();
@@ -35,7 +97,8 @@ public class JApp {
 
 	@SuppressWarnings({ "deprecation" })
 	private void startMongoLink() {
-		// master thread que garante que a slave thread estÃ¡ viva, senÃ£o tentar de N em
+		// master thread que garante que a slave thread estÃ¡ viva, senÃ£o tentar de N
+		// em
 		// N segundos/minutos
 
 		// tarefas da slave thread
@@ -47,7 +110,7 @@ public class JApp {
 			// connect to database
 			db = client.getDB("sid");
 			// get collection
-			//DBCollection collection = db.getCollection("humidtemp_aux");
+			// DBCollection collection = db.getCollection("humidtemp_aux");
 
 			/*
 			 * Thread responsavel por transferir todos os dados que estejam em espera na
@@ -86,10 +149,15 @@ public class JApp {
 	}
 
 	private void startPahoLink() {
+		System.out.println("vou ligar paho");
+		
+		
 		String topic1;
 		// topic1 = "sid_lab_2018";
-		topic1 = "sportingcampeao";
+		topic1 = "coceguinha";
 		sensores.add(new Sensor(topic1));
+		System.out.println("liguei paho");
+		
 	}
 
 	private void startSybaseLink() {
@@ -98,20 +166,21 @@ public class JApp {
 		new Thread(new Runnable() {
 			@Override
 			public void run() {
-				while(true) {
+				while (true) {
 					sybase_connection.start();
 					try {
 						Thread.currentThread().sleep(mongo_sybase_sleep);
 					} catch (InterruptedException e) {
 						e.printStackTrace();
 					}
-				}				
+				}
 			}
 		}).start();
 	}
 
 	// https://eclipse.org/paho/clients/js/utility/
-	// {â€œ_idâ€�:â€�36â€�, â€œtemperatureâ€�:â€�36.0â€�, â€œhumidityâ€�: â€œ72.3â€�, â€œdateâ€�: â€œ02/03/2018â€�,
+	// {â€œ_idâ€�:â€�36â€�, â€œtemperatureâ€�:â€�36.0â€�, â€œhumidityâ€�:
+	// â€œ72.3â€�, â€œdateâ€�: â€œ02/03/2018â€�,
 	// â€œtimeâ€�: â€œ01:00:00â€�}
 	public void receiveSensorData(String value) {
 		// iniciar thread que introduz dados no mongo
@@ -134,7 +203,8 @@ public class JApp {
 
 				mongo_list.add(vector_info);
 
-				//System.out.println("COLOQUEI DADOS NA LISTA DO JAVA em espera para o MONGO \n\n");
+				// System.out.println("COLOQUEI DADOS NA LISTA DO JAVA em espera para o MONGO
+				// \n\n");
 			}
 		}).start();
 	}
@@ -143,14 +213,14 @@ public class JApp {
 		DBCollection collection = db.getCollection("humidtemp_aux");
 		DBCursor cursor = collection.find();
 		migration_list = new ArrayList<String[]>();
-		
+
 		while (cursor.hasNext()) {
 			DBObject obj = cursor.next();
 			String temperature = (String) obj.get("temperature");
 			String humidity = (String) obj.get("humidity");
 			String date = (String) obj.get("date");
 			String time = (String) obj.get("time");
-			
+
 			String[] vector_info = new String[4];
 
 			vector_info[0] = temperature;
@@ -158,11 +228,12 @@ public class JApp {
 			vector_info[2] = date;
 			vector_info[3] = time;
 
-			migration_list.add(vector_info);			
+			migration_list.add(vector_info);
 		}
 		return migration_list;
 	}
-//
+
+	//
 	//
 	public void mongodbCollectionDataTransfer() {
 		// obter dados a tranferir
