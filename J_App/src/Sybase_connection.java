@@ -24,6 +24,8 @@ public class Sybase_connection {
 			int queryIt = ((Number) rs.getObject(1)).intValue();
 			// preparar o query da migracao de dados do mongodb para o sybase
 			String queryMigration = createQuery(queryIt);
+			System.out.println("PUTADOQUERY");
+			System.out.println(queryMigration);
 			rs = stmn.executeQuery(queryMigration);
 			System.out.println("migrei os dados");
 			// mover os dados da colecao temporaria para a permanente no mongodb
