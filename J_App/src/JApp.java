@@ -204,6 +204,7 @@ public class JApp {
 				mongo_list.add(vector_info);
 
 				// System.out.println("COLOQUEI DADOS NA LISTA DO JAVA em espera para o MONGO
+				
 				// \n\n");
 			}
 		}).start();

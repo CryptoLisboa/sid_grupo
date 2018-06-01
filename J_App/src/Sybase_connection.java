@@ -74,6 +74,7 @@ public class Sybase_connection {
 		int list_size = migrationData.size();
 		// percorrer a lista de dados afim de elaborar as variaveis com os dados das
 		/*
+		 * 
 		 * vector_info[0] = temperature; 
 		 * vector_info[1] = humidity; 
 		 * vector_info[2] = date;

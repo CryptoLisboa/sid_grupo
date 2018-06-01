@@ -19,6 +19,7 @@ public class Sensor implements MqttCallback {
 	public void connectionLost(Throwable arg0) {
 		// TODO Auto-generated method stub
 		
+		
 	}
 
 	@Override
