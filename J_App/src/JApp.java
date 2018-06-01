@@ -167,9 +167,9 @@ public class JApp {
 			@Override
 			public void run() {
 				while (true) {
-					sybase_connection.start();
 					try {
 						Thread.currentThread().sleep(mongo_sybase_sleep);
+						sybase_connection.start();
 					} catch (InterruptedException e) {
 						e.printStackTrace();
 					}
