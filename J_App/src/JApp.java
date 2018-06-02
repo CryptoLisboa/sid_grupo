@@ -1,5 +1,7 @@
 import java.util.List;
-
+import java.util.Scanner;
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.util.ArrayList;
 
 import com.mongodb.BasicDBObject;
@@ -12,12 +14,13 @@ import com.mongodb.MongoClient;
 public class JApp {
 
 	private static JApp instance = null;
+	private String topico=null;
 	private MongoClient client;
 	private DB db;
 	private List<Sensor> sensores = new ArrayList<Sensor>();
 	private List<String[]> mongo_list = new ArrayList<String[]>(), migration_list;
-	protected long java_mongo_sleep = 15 * 1000, mongo_sybase_sleep = 30 * 1000;
-
+	protected long java_mongo_sleep = 0, mongo_sybase_sleep = 0;
+	
 	protected JApp() {
 	}
 
@@ -147,16 +150,35 @@ public class JApp {
 			}).start();
 		}
 	}
+	
+	public void iniciarTopico() {
+	try {
+		Scanner read = new Scanner(new File("topico"));
+		String[] tmp = read.nextLine().split(" ");
+		topico = tmp[0];
+		java_mongo_sleep = Integer.parseInt(tmp[1]);
+		mongo_sybase_sleep = Integer.parseInt(tmp[2]);
+		
+		read.close();
+
+	} catch (FileNotFoundException e) {
+		System.out.println("erro");
+	}
+
+}
 
 	private void startPahoLink() {
+		JApp.getInstance().iniciarTopico();
 		System.out.println("vou ligar paho");
 		
 		
 		String topic1;
 		// topic1 = "sid_lab_2018";
-		topic1 = "coceguinha";
+		topic1 = topico;
 		sensores.add(new Sensor(topic1));
 		System.out.println("liguei paho");
+		System.out.println(topic1);
+	
 		
 	}
 
