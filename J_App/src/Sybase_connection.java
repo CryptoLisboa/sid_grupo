@@ -19,18 +19,19 @@ public class Sybase_connection {
 	public void start() {
 		try {
 			System.out.println("vou ligar");
-			connect = DriverManager.getConnection("jdbc:sqlanywhere:uid=dba;pwd=sql;eng=SID_DB2-1;database=SID_DB2-1");
+			connect = DriverManager.getConnection("jdbc:sqlanywhere:uid=Sensor;pwd=java;eng=SID_2;database=SID_2");
 			System.out.println("já liguei");
 			stmn = connect.createStatement();
 			// obter id da proxima alinea para insercao
-			ResultSet rs = stmn.executeQuery("select count(IDmedicao)+1 as total from HumidadeTemperatura");
+			//"select count(IDmedicao)+1 as total from HumidadeTemperatura"
+			ResultSet rs = stmn.executeQuery("CALL DBA.getNextHumTempID()");
 			int italico = 0;
 			while (rs.next()) {
-				italico = rs.getInt("total");
+				italico = rs.getInt("IDMedicao");
 			}
 			System.out.println("Italico == " + italico);
 			
-			int queryIt = italico+1;
+			int queryIt = italico;
 			// preparar o query da migracao de dados do mongodb para o sybase
 			String queryMigration = createQuery(queryIt);
 			System.out.println("a executar o segundo query\n\n" + queryMigration + "\n\n");
@@ -38,9 +39,16 @@ public class Sybase_connection {
 			System.out.println("migrei os dados");
 			// mover os dados da colecao temporaria para a permanente no mongodb
 			JApp.getInstance().mongodbCollectionDataTransfer();
+			
 		} catch (Exception e) {
 			System.out.println("SYBASE OFF");
+			System.out.println(e.getMessage());
 		}
+	}
+	
+	public static void main(String[] args) {
+		Sybase_connection sb = new Sybase_connection();
+		sb.start();
 	}
 
 	public static String formatDate(String date, String initDateFormat, String endDateFormat) {
@@ -67,7 +75,7 @@ public class Sybase_connection {
 		// obter lista com dados a inserir no sybase
 		List<String[]> migrationData = JApp.getInstance().getMigrationData();
 		// criar uma variavel para cada coluna
-		String localQuery = "INSERT into HumidadeTemperatura(ValorMedTemp, ValorMedHum, DataMed, HoraMed, IDmedicao) VALUES ";
+		String localQuery = "INSERT into DBA.HumidadeTemperatura(ValorMedicaoTemperatura, ValorMedicaoHumidade, DataMedicao, HoraMedicao, IDMedicao) VALUES ";
 		// iniciar a 1 porque o size começa a 1, caso nao esteja vazia
 		// iniciar a 1 porque o size comeÃ§a a 1, caso nao esteja vazia
 		int counter = 1;

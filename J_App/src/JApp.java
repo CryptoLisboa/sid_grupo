@@ -14,13 +14,13 @@ import com.mongodb.MongoClient;
 public class JApp {
 
 	private static JApp instance = null;
-	private String topico=null;
+	private String topico = null;
 	private MongoClient client;
 	private DB db;
 	private List<Sensor> sensores = new ArrayList<Sensor>();
 	private List<String[]> mongo_list = new ArrayList<String[]>(), migration_list;
 	protected long java_mongo_sleep = 0, mongo_sybase_sleep = 0;
-	
+
 	protected JApp() {
 	}
 
@@ -49,26 +49,49 @@ public class JApp {
 
 		double mean = sum / numArray.length;
 
+		switch (key) {
+		case "mean":
+			return mean;
+		default:
+			break;
+		}
+
 		for (double num : numArray) {
 			variancia += Math.pow(num - mean, 2);
 		}
 
 		double standardDeviation = Math.sqrt(variancia / numArray.length);
 
-		switch (key) {
-		case "mean":
-			return mean;
-		default:
-			return standardDeviation;
-		}
+		return standardDeviation;
 	}
-	
-	public void filtro(double numArray[]) {
-		ArrayList<Double> lst = new ArrayList<Double>();
-		double r=0;
-		for(int i=0; i<numArray.length;i++) {
-			
-			
+
+	public void filtrarAnomalias() {
+		// criar uma array com os valores de humidade
+		double[] humvec = converter("humidity");
+		// Obter media e desvio padrao Humidade
+		double medHum = calculateSD(humvec, "mean");
+		double dpHum = calculateSD(humvec, "dp");
+		// percorrer a array de dados humidade
+		for (int i = 0; i < humvec.length; i++) {
+			double val = humvec[i];
+			if (val < (medHum - dpHum) || val > (medHum + dpHum)) {
+				System.out.println("A remover o " + mongo_list.get(i).toString() + " por causa da humidade");
+				mongo_list.remove(i);
+			}
+		}
+
+		// criar uma array com os valores de temperatura
+		double[] tempvec = converter("temperature");
+		// Obter media e desvio padrao temperatura
+		double medTemp = calculateSD(tempvec, "mean");
+		double dpTemp = calculateSD(tempvec, "dp");
+		// percorrer a array de dados humidade
+		for (int i = 0; i < tempvec.length; i++) {
+			double val = tempvec[i];
+			if (val < (medTemp - dpTemp) || val > (medTemp + dpTemp)) {
+				System.out.println("A remover o " + mongo_list.get(i).toString() + " por causa da temperatura");
+				mongo_list.remove(i);
+			}
 		}
 	}
 
@@ -91,7 +114,7 @@ public class JApp {
 		}
 		return array;
 	}
-	
+
 	void run() {
 		startPahoLink();
 		startMongoLink();
@@ -150,36 +173,34 @@ public class JApp {
 			}).start();
 		}
 	}
-	
+
 	public void iniciarTopico() {
-	try {
-		Scanner read = new Scanner(new File("topico"));
-		String[] tmp = read.nextLine().split(" ");
-		topico = tmp[0];
-		java_mongo_sleep = Integer.parseInt(tmp[1]);
-		mongo_sybase_sleep = Integer.parseInt(tmp[2]);
-		
-		read.close();
+		try {
+			Scanner read = new Scanner(new File("topico"));
+			String[] tmp = read.nextLine().split(" ");
+			topico = tmp[0];
+			java_mongo_sleep = Integer.parseInt(tmp[1]);
+			mongo_sybase_sleep = Integer.parseInt(tmp[2]);
 
-	} catch (FileNotFoundException e) {
-		System.out.println("erro");
+			read.close();
+
+		} catch (FileNotFoundException e) {
+			System.out.println("erro");
+		}
+
 	}
-
-}
 
 	private void startPahoLink() {
 		JApp.getInstance().iniciarTopico();
 		System.out.println("vou ligar paho");
-		
-		
+
 		String topic1;
 		// topic1 = "sid_lab_2018";
 		topic1 = topico;
 		sensores.add(new Sensor(topic1));
 		System.out.println("liguei paho");
 		System.out.println(topic1);
-	
-		
+
 	}
 
 	private void startSybaseLink() {
@@ -226,7 +247,7 @@ public class JApp {
 				mongo_list.add(vector_info);
 
 				// System.out.println("COLOQUEI DADOS NA LISTA DO JAVA em espera para o MONGO
-				
+
 				// \n\n");
 			}
 		}).start();
