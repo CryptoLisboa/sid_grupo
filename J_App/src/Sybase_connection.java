@@ -23,29 +23,34 @@ public class Sybase_connection {
 			System.out.println("já liguei");
 			stmn = connect.createStatement();
 			// obter id da proxima alinea para insercao
-			//"select count(IDmedicao)+1 as total from HumidadeTemperatura"
+			// "select count(IDmedicao)+1 as total from HumidadeTemperatura"
 			ResultSet rs = stmn.executeQuery("CALL DBA.getNextHumTempID()");
 			int italico = 0;
 			while (rs.next()) {
 				italico = rs.getInt("IDMedicao");
 			}
+			connect.close();
 			System.out.println("Italico == " + italico);
-			
+
 			int queryIt = italico;
 			// preparar o query da migracao de dados do mongodb para o sybase
 			String queryMigration = createQuery(queryIt);
-			System.out.println("a executar o segundo query\n\n" + queryMigration + "\n\n");
-			rs = stmn.executeQuery(queryMigration);
-			System.out.println("migrei os dados");
-			// mover os dados da colecao temporaria para a permanente no mongodb
-			JApp.getInstance().mongodbCollectionDataTransfer();
-			
+			if (queryMigration.length() > 140) {
+				connect = DriverManager.getConnection("jdbc:sqlanywhere:uid=Sensor;pwd=java;eng=SID_2;database=SID_2");
+				stmn = connect.createStatement();
+				System.out.println("a executar o segundo query\n\n" + queryMigration + "\n\n");
+				rs = stmn.executeQuery(queryMigration);
+				System.out.println("migrei os dados");
+				// mover os dados da colecao temporaria para a permanente no mongodb
+				JApp.getInstance().mongodbCollectionDataTransfer();
+			}
+			connect.close();
 		} catch (Exception e) {
 			System.out.println("SYBASE OFF");
 			System.out.println(e.getMessage());
 		}
 	}
-	
+
 	public static void main(String[] args) {
 		Sybase_connection sb = new Sybase_connection();
 		sb.start();
@@ -84,26 +89,24 @@ public class Sybase_connection {
 		// percorrer a lista de dados afim de elaborar as variaveis com os dados das
 		/*
 		 * 
-		 * vector_info[0] = temperature; 
-		 * vector_info[1] = humidity; 
-		 * vector_info[2] = date;
-		 * vector_info[3] = time;
+		 * vector_info[0] = temperature; vector_info[1] = humidity; vector_info[2] =
+		 * date; vector_info[3] = time;
 		 */
 		for (String[] data : migrationData) {
 			String date = data[2];
 			String dateFOrmatada = formatDate(date, "dd/mm/yyyy", "yyyy-mm-dd");
-			String content = "(" + data[0] + ", " + data[1] + ", " + "'" + dateFOrmatada + "'" + ", " + "'" + data[3] + "'" + ", " + idLocal
-					+ ")";
+			String content = "(" + data[0] + ", " + data[1] + ", " + "'" + dateFOrmatada + "'" + ", " + "'" + data[3]
+					+ "'" + ", " + idLocal + ")";
 			idLocal++;
 			localQuery += content;
-			
+
 			// preparar para proxima entrada caso nao seja o ultimo
-			
+
 			if (counter < list_size) {
 				localQuery += ", ";
 			}
 			counter++;
-			
+
 		}
 		return localQuery;
 	}

@@ -18,7 +18,7 @@ public class JApp {
 	private MongoClient client;
 	private DB db;
 	private List<Sensor> sensores = new ArrayList<Sensor>();
-	private List<String[]> mongo_list = new ArrayList<String[]>(), migration_list;
+	private volatile List<String[]> mongo_list = new ArrayList<String[]>(), migration_list;
 	protected long java_mongo_sleep = 0, mongo_sybase_sleep = 0;
 
 	protected JApp() {
@@ -65,18 +65,21 @@ public class JApp {
 		return standardDeviation;
 	}
 
-	public void filtrarAnomalias() {
+	public synchronized void filtrarAnomalias() {
 		// criar uma array com os valores de humidade
 		double[] humvec = converter("humidity");
 		// Obter media e desvio padrao Humidade
 		double medHum = calculateSD(humvec, "mean");
 		double dpHum = calculateSD(humvec, "dp");
+		//
+		List<String[]> trash_list = new ArrayList<String[]>();
 		// percorrer a array de dados humidade
 		for (int i = 0; i < humvec.length; i++) {
 			double val = humvec[i];
-			if (val < (medHum - dpHum) || val > (medHum + dpHum)) {
-				System.out.println("A remover o " + mongo_list.get(i).toString() + " por causa da humidade");
-				mongo_list.remove(i);
+			if (val < (medHum - dpHum - medHum * 1 / 3) || val > (medHum + dpHum + medHum * 1 / 3)) {
+				System.out.println("A remover o " + mongo_list.get(i).toString() + " por causa da humidade" + " " + val
+						+ " " + (medHum - dpHum) + " " + (medHum + dpHum));
+				trash_list.add(mongo_list.get(i));
 			}
 		}
 
@@ -88,14 +91,19 @@ public class JApp {
 		// percorrer a array de dados humidade
 		for (int i = 0; i < tempvec.length; i++) {
 			double val = tempvec[i];
-			if (val < (medTemp - dpTemp) || val > (medTemp + dpTemp)) {
-				System.out.println("A remover o " + mongo_list.get(i).toString() + " por causa da temperatura");
-				mongo_list.remove(i);
+			if (val < (medTemp - dpTemp - medTemp * 1 / 3) || val > (medTemp + dpTemp + medTemp * 1 / 3)) {
+				System.out.println("A remover o " + mongo_list.get(i).toString() + " por causa da temperatura" + " "
+						+ val + " " + (medTemp - dpTemp) + " " + (medTemp + dpTemp));
+				if (!trash_list.contains(mongo_list.get(i)))
+					trash_list.add(mongo_list.get(i));
 			}
+		}
+		for (String[] d : trash_list) {
+			mongo_list.remove(d);
 		}
 	}
 
-	private double[] converter(String key) {
+	private synchronized double[] converter(String key) {
 		double[] array = new double[mongo_list.size()];
 		for (int i = 0; i < mongo_list.size(); i++) {
 			String[] array_sting = mongo_list.get(i);
@@ -147,24 +155,9 @@ public class JApp {
 				public void run() {
 					while (true) {
 						// filtrar valores anomalos
-						filtrarAnomalias();
-						// get collection - data destination
-						DBCollection collection = db.getCollection("humidtemp_aux");
-						// prepare data and insert
-						for (String[] vector_info : mongo_list) {
-							String temperature = vector_info[0];
-							String humidity = vector_info[1];
-							String date = vector_info[2];
-							String time = vector_info[3];
-
-							DBObject sensor_data = new BasicDBObject("temperature", temperature)
-									.append("humidity", humidity).append("date", date).append("time", time);
-							collection.insert(sensor_data);
-						}
-
-						System.out.println("INSERI " + mongo_list.size() + " entradas no MONGO \n\n");
-
-						mongo_list.clear();
+						if (java_mongo_sleep >= 30000)
+							filtrarAnomalias();
+						insertDataInMongo();
 						// esperar por mais dados
 						try {
 							Thread.currentThread().sleep(java_mongo_sleep);
@@ -175,6 +168,27 @@ public class JApp {
 				}
 			}).start();
 		}
+	}
+
+	protected synchronized void insertDataInMongo() {
+		// get collection - data destination
+		DBCollection collection = db.getCollection("humidtemp_aux");
+		// prepare data and insert
+		for (String[] vector_info : mongo_list) {
+			String temperature = vector_info[0];
+			String humidity = vector_info[1];
+			String date = vector_info[2];
+			String time = vector_info[3];
+
+			DBObject sensor_data = new BasicDBObject("temperature", temperature).append("humidity", humidity)
+					.append("date", date).append("time", time);
+			collection.insert(sensor_data);
+		}
+
+		System.out.println("INSERI " + mongo_list.size() + " entradas no MONGO \n\n");
+
+		mongo_list.clear();
+
 	}
 
 	public void iniciarTopico() {
@@ -228,7 +242,7 @@ public class JApp {
 	// {â€œ_idâ€�:â€�36â€�, â€œtemperatureâ€�:â€�36.0â€�, â€œhumidityâ€�:
 	// â€œ72.3â€�, â€œdateâ€�: â€œ02/03/2018â€�,
 	// â€œtimeâ€�: â€œ01:00:00â€�}
-	public void receiveSensorData(String value) {
+	synchronized void receiveSensorData(String value) {
 		// iniciar thread que introduz dados no mongo
 		new Thread(new Runnable() {
 			@Override
@@ -256,7 +270,7 @@ public class JApp {
 		}).start();
 	}
 
-	public List<String[]> getMigrationData() {
+	synchronized List<String[]> getMigrationData() {
 		DBCollection collection = db.getCollection("humidtemp_aux");
 		DBCursor cursor = collection.find();
 		migration_list = new ArrayList<String[]>();
