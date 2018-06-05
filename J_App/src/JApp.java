@@ -146,8 +146,11 @@ public class JApp {
 				@Override
 				public void run() {
 					while (true) {
+						// filtrar valores anomalos
+						filtrarAnomalias();
+						// get collection - data destination
 						DBCollection collection = db.getCollection("humidtemp_aux");
-
+						// prepare data and insert
 						for (String[] vector_info : mongo_list) {
 							String temperature = vector_info[0];
 							String humidity = vector_info[1];
