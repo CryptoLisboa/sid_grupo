@@ -20,6 +20,7 @@ public class JApp {
 	private List<Sensor> sensores = new ArrayList<Sensor>();
 	private volatile List<String[]> mongo_list = new ArrayList<String[]>(), migration_list;
 	protected long java_mongo_sleep = 0, mongo_sybase_sleep = 0;
+	private int minimum_data;
 
 	protected JApp() {
 	}
@@ -155,7 +156,7 @@ public class JApp {
 				public void run() {
 					while (true) {
 						// filtrar valores anomalos
-						if (java_mongo_sleep >= 30000)
+						if (mongo_list.size() >= minimum_data && minimum_data > 0)
 							filtrarAnomalias();
 						insertDataInMongo();
 						// esperar por mais dados
@@ -198,6 +199,7 @@ public class JApp {
 			topico = tmp[0];
 			java_mongo_sleep = Integer.parseInt(tmp[1]);
 			mongo_sybase_sleep = Integer.parseInt(tmp[2]);
+			minimum_data  = Integer.parseInt(tmp[3]);
 
 			read.close();
 
